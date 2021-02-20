@@ -79,12 +79,51 @@
 
     <!-- Main Script -->
     <script type="module">
+      /**
+       * Function handles throwing errors based off of the response received. 
+       */
+      function handleResponse(response) {
+        // Check to make sure it is of Response type
+        if (!(response instanceof Response)) throw TypeError('Not a fetch response');
+
+        // If response was handled correctly, immediately return json
+        if (response.ok) return response.json();
+
+        // Else, create an appropriate error
+        let error = new Error(response.status);
+        switch (Math.floor(response.status / 100)) {
+          case 4:
+            error.name = 'Network Error';
+            break;
+          case 5:
+            error.name = 'Server Error';
+            break;
+          default:
+            error.name = 'Generic Error';
+            break;
+        }
+        throw error;
+      }
+
+      /**
+       * Function handles hiding the extra record and id forms
+       */
+      function hideExtraForms() {
+        document.getElementById('recordForm').style.display = 'none';
+        document.getElementById('recordIDcontainer').style.display = 'none';
+      }
+
       // This function should fetch all of the data from the given endpoint.
       // From the 4 CRUD actions, this is the READ action, and uses the GET http method.
       // The main difference from fetchOne() will be the URL you request from; check
       // the writeup to view the URL pattern for fetch one and fetch all
       function fetchAll() {
-        // TODO
+        const endpoint = document.getElementById('endpoint');
+        const output   = document.getElementById('output');
+        fetch(endpoint.value)
+          .then(handleResponse)
+          .then(response => output.textContent = JSON.stringify(response))
+          .catch(err => output.textContent = err);
       }
 
       // This function should fetch one entry from the given endpoint.
@@ -92,23 +131,73 @@
       // The main difference from fetchAll() will be the URL you request from; check
       // the writeup to view the URL pattern for fetch one and fetch all
       function fetchOne() {
-        // TODO
+        const endpoint = document.getElementById('endpoint').value;
+        const output   = document.getElementById('output');
+        const id       = prompt('Enter record id');
+
+        if (id === '') alert('Illegal action');
+        fetch(`${endpoint}/${id}`)
+          .then(handleResponse)
+          .then(response => output.textContent = JSON.stringify(response))
+          .catch(err => output.textContent = err);
       }
 
       // This function should use fetch to create one entry in the given endpoint.
       // From the 4 CRUD actions, this is the CREATE action, and uses the POST http method.
       // The main difference from updateRecord() will be the URL you send data to; check
       // the writeup to view the URL pattern for create and update
-      function createRecord() {
-        // TODO
+      function createRecord(action) {
+        switch (action) {
+          case 'show':
+            document.getElementById('recordForm').style.display = 'block';
+            break;
+          case 'submit':
+            const endpoint = document.getElementById('endpoint').value;
+            const output   = document.getElementById('output');
+            const title    = document.getElementById('title').value;
+            const author   = document.getElementById('author').value;
+
+            const formData = {author, title}
+
+            fetch(`${endpoint}`, {body: JSON.stringify(formData), headers: {'Content-Type': 'application/json'}, method: 'POST'})
+              .then(handleResponse)
+              .then(response => output.textContent = JSON.stringify(response))
+              .catch(err => output.textContent = err);
+            break;
+          default:
+            alert('Illegal action');
+            break;
+        }
       }
 
       // This function should use fetch to update one existing entry in the given endpoint.
       // From the 4 CRUD actions, this is the UPDATE action, and uses the PUT http method.
       // The main difference from createRecord() will be the URL you send data to; check
       // the writeup to view the URL pattern for create and update
-      function updateRecord() {
-        // TODO
+      function updateRecord(action) {
+        switch (action) {
+          case 'show':
+            document.getElementById('recordForm').style.display = 'block';
+            document.getElementById('recordIDcontainer').style.display = 'block';
+            break;
+          case 'submit':
+            const endpoint = document.getElementById('endpoint').value;
+            const output   = document.getElementById('output');
+            const title    = document.getElementById('title').value;
+            const author   = document.getElementById('author').value;
+            const id       = document.getElementById('recordID').value;
+
+            const formData = {author, title}
+
+            fetch(`${endpoint}/${id}`, {body: JSON.stringify(formData), headers: {'Content-Type': 'application/json'}, method: 'PUT'})
+              .then(handleResponse)
+              .then(response => output.textContent = JSON.stringify(response))
+              .catch(err => output.textContent = err);
+            break;
+          default:
+            alert('Illegal action');
+            break;
+        }
       }
 
       // This function should use fetch to delete one existing entry in the given endpoint.
@@ -117,7 +206,15 @@
       // request; check the writeup to view the URL pattern for get one and delete. THERE IS NO 
       // delete all, only delete one.
       function deleteRecord() {
-        // TODO
+        const endpoint = document.getElementById('endpoint').value;
+        const output   = document.getElementById('output');
+        const id       = prompt('Enter record id');
+
+        if (id === '') alert('Illegal action');
+        fetch(`${endpoint}/${id}`, {method: 'DELETE'})
+          .then(handleResponse)
+          .then(response => output.textContent = JSON.stringify(response))
+          .catch(err => output.textContent = err);
       }
 
       window.addEventListener('DOMContentLoaded', () => {
@@ -167,7 +264,11 @@
                 alert("Error: Illegal Action");
             }
           });
-      });
+        // Handles automatically hiding the extra forms
+        document
+          .getElementById('action')
+          .addEventListener('change', event => hideExtraForms());
+        });
     </script>
   </body>
 </html>
